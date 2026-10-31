@@ -244,12 +244,13 @@
   // ---------- 发音 ----------
   function speak(text){
     try{
+      if(!('speechSynthesis' in window) || !window.speechSynthesis) return;
       const u = new SpeechSynthesisUtterance(text);
       u.lang = 'en-GB'; u.rate = 0.9;
-      const voices = speechSynthesis.getVoices();
+      const voices = window.speechSynthesis.getVoices();
       const v = voices.find(x => /en-GB/i.test(x.lang)) || voices.find(x => /^en/i.test(x.lang));
       if(v) u.voice = v;
-      speechSynthesis.cancel(); speechSynthesis.speak(u);
+      window.speechSynthesis.cancel(); window.speechSynthesis.speak(u);
     }catch(e){}
   }
   const enCache = new Map();
@@ -273,6 +274,7 @@
   async function renderDraw(word){
     currentWord = word;
     currentAudio = null;
+    speak(word); // 立即朗读（在点击手势内同步触发，微信/iOS 也能出声）
     const hide = $('hideAns').checked;
     $('drawIdle').style.display = 'none';
     $('drawResult').style.display = 'block';
@@ -329,14 +331,17 @@
         if(enArea) enArea.innerHTML = eh;
       }
     }
-    // 抽到自动发音一次（有真人音频用真人，否则 TTS）
-    if(currentWord === word) pronounce();
   }
 
   function pronounce(){
     if(!currentWord) return;
-    if(currentAudio){ new Audio(currentAudio).play().catch(()=>speak(currentWord)); }
-    else speak(currentWord);
+    if(currentAudio){
+      const a = new Audio(currentAudio);
+      const t = setTimeout(() => { try{ a.pause(); }catch(e){} speak(currentWord); }, 1500);
+      a.play().then(() => clearTimeout(t)).catch(() => { clearTimeout(t); speak(currentWord); });
+    } else {
+      speak(currentWord);
+    }
   }
 
   function doDraw(){
