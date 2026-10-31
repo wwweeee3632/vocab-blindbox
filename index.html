@@ -269,12 +269,11 @@
   }
 
   // ---------- 渲染：抽背 ----------
-  let currentWord = null, currentAudio = null;
+  let currentWord = null;
 
   async function renderDraw(word){
     currentWord = word;
-    currentAudio = null;
-    speak(word); // 立即朗读（在点击手势内同步触发，微信/iOS 也能出声）
+    playPronunciation(word); // 抽到即播放有道发音（微信可用），失败回退 TTS
     const hide = $('hideAns').checked;
     $('drawIdle').style.display = 'none';
     $('drawResult').style.display = 'block';
@@ -312,8 +311,6 @@
     const en = await fetchEnglish(word);
     if(en){
       if(en.phonetic) $('drawPhonetic').textContent = en.phonetic;
-      const audio = (en.phonetics||[]).find(p => p.audio);
-      if(audio){ currentAudio = audio.audio; }
       const meanings = (en.meanings||[]).slice(0,4);
       if(meanings.length){
         let eh = '<details class="encard"><summary>🌐 英文释义 · 例句（点击展开）</summary>';
@@ -333,15 +330,20 @@
     }
   }
 
-  function pronounce(){
-    if(!currentWord) return;
-    if(currentAudio){
-      const a = new Audio(currentAudio);
-      const t = setTimeout(() => { try{ a.pause(); }catch(e){} speak(currentWord); }, 1500);
-      a.play().then(() => clearTimeout(t)).catch(() => { clearTimeout(t); speak(currentWord); });
-    } else {
-      speak(currentWord);
-    }
+  // 播放发音：优先有道真人音频（国内可访问、微信可用），加载慢或失败回退浏览器 TTS
+  function playPronunciation(word){
+    if(!word) return;
+    const url = 'https://dict.youdao.com/dictvoice?audio=' + encodeURIComponent(word) + '&type=1';
+    const a = new Audio(url);
+    let settled = false;
+    const t = setTimeout(() => {
+      if(settled) return;
+      settled = true;
+      try{ a.pause(); }catch(e){}
+      speak(word);
+    }, 1800);
+    a.play().then(() => { settled = true; clearTimeout(t); })
+          .catch(() => { if(settled) return; settled = true; clearTimeout(t); speak(word); });
   }
 
   function doDraw(){
@@ -411,7 +413,7 @@
 
   // ---------- 事件 ----------
   $('btnDraw').onclick = doDraw;
-  $('btnSpeak').onclick = pronounce;
+  $('btnSpeak').onclick = function(){ playPronunciation(currentWord); };
   $('btnMaster').onclick = function(){
     if(!currentWord) return;
     state.words[currentWord].mastered = true;
