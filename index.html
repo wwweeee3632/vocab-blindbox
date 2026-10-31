@@ -58,10 +58,8 @@
   .box{position:relative;text-align:center;padding:26px 16px 22px;overflow:hidden;}
   .box .drawcount{position:absolute;top:12px;right:14px;background:var(--brand);color:#fff;
     font-size:12px;font-weight:600;border-radius:999px;padding:3px 10px;}
-  .box .word{font-size:40px;font-weight:700;letter-spacing:.5px;margin:8px 0 4px;word-break:break-word;}
+  .box .word{font-family:Arial,"Helvetica Neue",Helvetica,sans-serif;font-size:40px;font-weight:700;margin:8px 0 4px;word-break:break-word;}
   .gift{font-size:54px;line-height:1;margin:6px 0 2px;}
-  .pop{animation:pop .25s ease;}
-  @keyframes pop{from{opacity:0;}to{opacity:1;}}
   .box .phonetic{font-size:15px;color:var(--sub);margin-bottom:14px;min-height:20px;}
   .box .speak{width:56px;height:56px;border-radius:50%;border:0;background:var(--soft);
     font-size:24px;cursor:pointer;box-shadow:inset 0 0 0 1px var(--line);}
@@ -281,7 +279,6 @@
     $('drawWord').textContent = word;
     $('drawPhonetic').textContent = '';
     $('drawCount').textContent = '抽到 ' + (state.words[word].count||0) + ' 次';
-    $('drawWord').classList.remove('pop'); void $('drawWord').offsetWidth; $('drawWord').classList.add('pop');
 
     // 中文释义（本地词典）
     const zh = DICT[word.toLowerCase()];
