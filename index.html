@@ -59,6 +59,9 @@
   .box .drawcount{position:absolute;top:12px;right:14px;background:var(--brand);color:#fff;
     font-size:12px;font-weight:600;border-radius:999px;padding:3px 10px;}
   .box .word{font-size:40px;font-weight:800;letter-spacing:.5px;margin:8px 0 4px;word-break:break-word;}
+  .gift{font-size:54px;line-height:1;margin:6px 0 2px;}
+  .pop{animation:pop .38s ease;}
+  @keyframes pop{0%{transform:scale(.5);opacity:0;}55%{transform:scale(1.08);opacity:1;}100%{transform:scale(1);}}
   .box .phonetic{font-size:15px;color:var(--sub);margin-bottom:14px;min-height:20px;}
   .box .speak{width:56px;height:56px;border-radius:50%;border:0;background:var(--soft);
     font-size:24px;cursor:pointer;box-shadow:inset 0 0 0 1px var(--line);}
@@ -133,15 +136,21 @@
       <input type="checkbox" id="hideAns"> 抽到先遮住释义，自己回忆后点「显示释义」
     </label>
     <div class="card box" id="drawCard">
-      <div class="drawcount" id="drawCount" style="display:none;">抽到 0 次</div>
-      <div class="word" id="drawWord">—</div>
-      <div class="phonetic" id="drawPhonetic"></div>
-      <button class="speak" id="btnSpeak" title="发音">🔊</button>
-      <div id="drawBody" style="text-align:left;margin-top:16px;"></div>
-      <button class="btn ghost full" id="btnReveal" style="display:none;margin-top:14px;">👁 显示释义</button>
+      <div id="drawIdle">
+        <div class="gift">🎁</div>
+        <div class="muted">点下面的「开始抽背」，抽一个词</div>
+      </div>
+      <div id="drawResult" style="display:none;">
+        <div class="drawcount" id="drawCount">抽到 0 次</div>
+        <div class="word" id="drawWord"></div>
+        <div class="phonetic" id="drawPhonetic"></div>
+        <button class="speak" id="btnSpeak" title="发音">🔊</button>
+        <div id="drawBody" style="text-align:left;margin-top:16px;"></div>
+        <button class="btn ghost full" id="btnReveal" style="display:none;margin-top:14px;">👁 显示释义</button>
+      </div>
     </div>
     <div class="row">
-      <button class="btn primary full" id="btnDraw">🎁 抽一个</button>
+      <button class="btn primary full" id="btnDraw">🎁 开始抽背</button>
     </div>
     <div class="row" style="margin-top:10px;">
       <button class="btn ok full" id="btnMaster" style="display:none;">✅ 标熟（下次不抽到）</button>
@@ -267,11 +276,12 @@
     currentWord = word;
     currentAudio = null;
     const hide = $('hideAns').checked;
+    $('drawIdle').style.display = 'none';
+    $('drawResult').style.display = 'block';
     $('drawWord').textContent = word;
     $('drawPhonetic').textContent = '';
-    const dc = $('drawCount');
-    dc.style.display = 'block';
-    dc.textContent = '抽到 ' + (state.words[word].count||0) + ' 次';
+    $('drawCount').textContent = '抽到 ' + (state.words[word].count||0) + ' 次';
+    $('drawWord').classList.remove('pop'); void $('drawWord').offsetWidth; $('drawWord').classList.add('pop');
 
     // 中文释义（本地词典）
     const zh = DICT[word.toLowerCase()];
@@ -337,7 +347,6 @@
     if(!w){ const total = Object.keys(state.words).length; toast(total ? '🎉 都背完了！去「已熟」复习或添加新词' : '先去「添加」贴一些单词吧'); $('drawCard').classList.add('shake'); setTimeout(()=>$('drawCard').classList.remove('shake'),500); return; }
     state.words[w].count = (state.words[w].count||0) + 1;
     save();
-    $('drawCard').classList.remove('shake'); void $('drawCard').offsetWidth; $('drawCard').classList.add('shake');
     renderDraw(w);
   }
 
@@ -406,11 +415,10 @@
     state.words[currentWord].mastered = true;
     save(); toast('✅ 已放入「已熟」，下次不再抽到');
     $('btnMaster').style.display = 'none';
-    $('btnDraw').textContent = '🎁 抽一个';
+    $('btnDraw').textContent = '🎁 开始抽背';
     $('drawBody').style.display = 'none';
-    $('drawWord').textContent = '—';
-    $('drawPhonetic').textContent = '';
-    $('drawCount').style.display = 'none';
+    $('drawResult').style.display = 'none';
+    $('drawIdle').style.display = 'block';
     currentWord = null;
   };
   $('hideAns').onchange = function(){
