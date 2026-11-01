@@ -17,7 +17,6 @@ window.DICT_EXTRA = {
   "polytechnic": [["n.", "（尤指英国的）理工学院"], ["adj.", "综合技术的；多种工艺的"]],
   "preposition": [["n.", "介词；前置词"]],
   "scrutinise": [["v.", "仔细审查；细看；详查"]],
-  "srutinise": [["v.", "（拼写应为 scrutinise）仔细审查；细看"]],
   "sewerage": [["n.", "排水系统；下水道系统；污水处理"]],
   "typist": [["n.", "打字员"]]
 };
