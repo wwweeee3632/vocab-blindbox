@@ -107,8 +107,22 @@
     padding:9px 16px;border-radius:999px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .25s;z-index:99;}
   .toast.show{opacity:.95;}
 
+  /* 导出弹窗 */
+  .modal-mask{position:fixed;inset:0;background:rgba(0,0,0,.42);display:none;align-items:center;
+    justify-content:center;z-index:200;padding:20px;}
+  .modal-mask.show{display:flex;}
+  .modal{background:var(--card);border-radius:16px;width:100%;max-width:560px;max-height:82vh;
+    display:flex;flex-direction:column;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.22);}
+  .modal .m-head{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;
+    border-bottom:1px solid var(--line);}
+  .modal .m-head strong{font-size:15px;}
+  .modal .m-body{padding:14px 18px;overflow:auto;}
+  .modal .m-foot{padding:12px 18px;border-top:1px solid var(--line);display:flex;gap:8px;}
+  .modal .m-foot .btn{flex:1;}
+
   .seg{display:flex;gap:8px;margin-bottom:12px;}
   .seg button{flex:1;}
+  .seg button.active{background:var(--brand);color:#fff;border-color:transparent;}
   .muted{color:var(--sub);font-size:13px;}
   .hint{font-size:12px;color:var(--sub);margin-top:8px;line-height:1.5;}
 </style>
@@ -160,7 +174,10 @@
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
         <strong style="font-size:15px;">全部单词</strong>
-        <button class="btn ghost sm" id="btnClearAll">清空全部</button>
+        <div style="display:flex;gap:6px;">
+          <button class="btn ghost sm" id="btnExportWords">📤 导出</button>
+          <button class="btn ghost sm" id="btnClearAll">清空全部</button>
+        </div>
       </div>
       <div id="wordsList"></div>
     </div>
@@ -204,6 +221,28 @@
   <button data-tab="mastered"><span class="ic">✅</span>已熟</button>
   <button data-tab="add"><span class="ic">➕</span>添加</button>
 </nav>
+
+<div class="modal-mask" id="exportMask">
+  <div class="modal">
+    <div class="m-head">
+      <strong>📤 导出单词</strong>
+      <button class="btn ghost sm" id="exportClose">✕ 关闭</button>
+    </div>
+    <div class="m-body">
+      <div class="seg">
+        <button class="btn ghost sm" id="fmtLines">每行一个</button>
+        <button class="btn ghost sm" id="fmtComma">逗号分隔</button>
+      </div>
+      <div class="muted" id="exportCount" style="margin-bottom:8px;">共 0 个单词</div>
+      <textarea id="exportText" rows="10" readonly placeholder="点击即可全选复制"></textarea>
+      <div class="hint">点击文本框自动全选，Ctrl/Cmd+C 复制；或点下方「复制」「下载」。</div>
+    </div>
+    <div class="m-foot">
+      <button class="btn primary" id="exportCopy">📋 复制</button>
+      <button class="btn ghost" id="exportDownload">⬇️ 下载 .txt</button>
+    </div>
+  </div>
+</div>
 
 <div class="toast" id="toast"></div>
 
@@ -490,6 +529,50 @@
       }catch(err){ toast('导入失败：文件格式不对'); }
     };
     rd.readAsText(f); e.target.value='';
+  };
+
+  // ---------- 导出单词（纯文本，可直接复制） ----------
+  let exportFmt = 'lines'; // 'lines' 每行一个 | 'comma' 逗号分隔
+  function exportWordList(){ return Object.keys(state.words).sort(); }
+  function renderExportText(){
+    const words = exportWordList();
+    $('exportText').value = words.join(exportFmt === 'comma' ? ', ' : '\n');
+    $('exportCount').textContent = '共 ' + words.length + ' 个单词';
+    $('fmtLines').classList.toggle('active', exportFmt === 'lines');
+    $('fmtComma').classList.toggle('active', exportFmt === 'comma');
+  }
+  $('btnExportWords').onclick = function(){
+    if(!exportWordList().length){ toast('还没有单词可导出'); return; }
+    renderExportText();
+    $('exportMask').classList.add('show');
+  };
+  function closeExport(){ $('exportMask').classList.remove('show'); }
+  $('exportClose').onclick = closeExport;
+  $('exportMask').addEventListener('click', function(e){ if(e.target === this) closeExport(); });
+  $('fmtLines').onclick = function(){ exportFmt='lines'; renderExportText(); };
+  $('fmtComma').onclick = function(){ exportFmt='comma'; renderExportText(); };
+  $('exportText').onclick = function(){ this.select(); };
+  $('exportText').onfocus = function(){ this.select(); };
+  $('exportCopy').onclick = function(){
+    const t = $('exportText').value;
+    const done = function(){ toast('✅ 已复制 ' + exportWordList().length + ' 个单词'); };
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(t).then(done).catch(function(){
+        $('exportText').select(); try{ document.execCommand('copy'); }catch(e){}
+        toast('请手动 Ctrl/Cmd+C 复制');
+      });
+    } else {
+      $('exportText').select(); try{ document.execCommand('copy'); }catch(e){}
+      done();
+    }
+  };
+  $('exportDownload').onclick = function(){
+    const blob = new Blob([$('exportText').value], {type:'text/plain;charset=utf-8'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = '单词表-' + new Date().toISOString().slice(0,10) + '.txt';
+    a.click(); URL.revokeObjectURL(a.href);
+    toast('已下载 .txt');
   };
 
   // tab 切换
